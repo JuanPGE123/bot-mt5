@@ -18,7 +18,7 @@ enum ENUM_TP_TYPE    { TP_PIPS=0, TP_ATR=1, TP_RR=2 };
 
 //====================== INPUTS =======================================
 input string  Inp_Section0        = "===== GENERAL =====";
-input long    InpMagicNumber      = 20251106;    // Magic Number
+input long    InpMagicNumber      = 20251106;    // Magic Number (debe ser distinto por cada EA/instancia que corra en el mismo simbolo)
 input bool    InpEnableLogs       = true;        // Activar logs Journal
 input bool    InpExportCSV        = true;        // Exportar CSV operaciones
 input bool    InpDrawObjects      = true;        // Dibujar flechas/objetos
