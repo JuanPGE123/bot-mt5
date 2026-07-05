@@ -41,28 +41,28 @@ input string  Inp_Section3        = "===== SEÑALES =====";
 input ENUM_EVAL_MODE InpEvalMode  = EVAL_CLOSE_BAR; // Modo evaluacion
 input int     InpEMA_Fast         = 20;   // EMA rapida  [rango opt 10-50 step 5]
 input int     InpEMA_Slow         = 50;   // EMA lenta   [rango opt 50-200 step 10]
-input int     InpRSI_Period       = 14;   // Periodo RSI
-input double  InpRSI_Buy          = 50.0; // Umbral RSI compra (cruce EMA es el gatillo principal)
-input double  InpRSI_Sell         = 50.0; // Umbral RSI venta  (cruce EMA es el gatillo principal)
+input int     InpRSI_Period       = 14;   // Periodo RSI [opt 5-25 step 1]
+input double  InpRSI_Buy          = 50.0; // Umbral RSI compra (cruce EMA es el gatillo principal) [opt 45-60 step 1]
+input double  InpRSI_Sell         = 50.0; // Umbral RSI venta  (cruce EMA es el gatillo principal) [opt 40-55 step 1]
 input bool    InpOneTradePerBar   = true; // Una operacion nueva de tendencia por vela
 
 input string  Inp_Section4        = "===== FILTROS (NO BLOQUEANTES) =====";
 input bool    InpUseTrendFilter   = true;  // EMA200 como potenciador de direccion (no bloquea)
-input int     InpEMA_Trend        = 200;   // Periodo EMA tendencia
-input double  InpAgainstTrendLotFactor = 0.5; // Factor de lote si entra contra tendencia
+input int     InpEMA_Trend        = 200;   // Periodo EMA tendencia [opt 100-300 step 50]
+input double  InpAgainstTrendLotFactor = 0.5; // Factor de lote si entra contra tendencia [opt 0.2-1.0 step 0.1]
 input bool    InpUseVolFilter     = true;  // Filtro ATR (informativo, ya no bloquea)
-input int     InpATR_Period       = 14;    // Periodo ATR
+input int     InpATR_Period       = 14;    // Periodo ATR [opt 7-21 step 1]
 input double  InpATR_MinPoints    = 30;    // ATR minimo en puntos (solo log)
 input bool    InpUseADXFilter     = true;  // Filtro ADX (informativo, ya no bloquea)
-input int     InpADX_Period       = 14;    // Periodo ADX
-input double  InpADX_MinLevel     = 14.0;  // ADX minimo (solo log)
+input int     InpADX_Period       = 14;    // Periodo ADX [opt 7-21 step 1]
+input double  InpADX_MinLevel     = 14.0;  // ADX minimo (solo log) [opt 10-30 step 2]
 
 input string  Inp_Section5        = "===== SALIDAS (SIN STOP LOSS FISICO) =====";
 input ENUM_TP_TYPE InpTPType      = TP_ATR;  // Tipo TP inicial (posicion unica, antes de grid)
 input double  InpTP_Pips          = 600;     // TP en puntos (si TP_PIPS)
-input double  InpSL_ATRMult       = 1.2;     // ATR hipotetico SOLO para dimensionar lote (no se envia como SL real)
+input double  InpSL_ATRMult       = 1.2;     // ATR hipotetico SOLO para dimensionar lote (no se envia como SL real) [opt 0.5-3.0 step 0.1]
 input double  InpTP_ATRMult       = 2.6;     // Multiplicador ATR TP [opt 1.5-3.5 step 0.1]
-input double  InpTP_RR            = 2.2;     // Ratio riesgo/beneficio (si TP_RR, usa SL hipotetico)
+input double  InpTP_RR            = 2.2;     // Ratio riesgo/beneficio (si TP_RR, usa SL hipotetico) [opt 1.5-4.0 step 0.1]
 
 input bool    InpUseTrailing      = false;   // Desactivado: dependia de SL fijo
 input double  InpTrailStartPts    = 300;     // (sin uso, se deja por compatibilidad de inputs)
@@ -80,17 +80,18 @@ input bool    InpUseTimeExit      = false;   // Salida por tiempo maximo
 input int     InpMaxBarsInTrade   = 100;     // Barras maximas en trade
 
 input string  Inp_Section6        = "===== RIESGO/EXPOSICION =====";
-input double  InpFixedLot         = 0.01;    // Lote fijo base (fallback si el calculo por riesgo falla)
-input double  InpRiskPercent      = 1.0;     // Riesgo por operacion (% balance, sobre SL hipotetico)
+input double  InpFixedLot         = 0.01;    // Lote fijo base (usado si InpUseFixedLot=true, o de fallback si el calculo por riesgo falla)
+input bool    InpUseFixedLot      = false;   // true = operar SIEMPRE con InpFixedLot (ignora InpRiskPercent)
+input double  InpRiskPercent      = 1.0;     // Riesgo por operacion (% balance, sobre SL hipotetico) [opt 0.2-3.0 step 0.1]
 input int     InpMaxPosSymbol     = 6;       // Max posiciones por simbolo (incluye cesta de recuperacion)
 input int     InpMaxPosTotal      = 10;      // Max posiciones totales
 input double  InpMinDistancePts   = 0;       // Distancia minima entre ordenes (pts)
 
 input string  Inp_Section6b       = "===== GRID / RECUPERACION (MARTINGALA SUAVE) =====";
-input double  InpGridDistanceATRMultiplier = 1.5; // Distancia en contra (x ATR) para abrir posicion de recuperacion
-input double  InpMartingaleMultiplier      = 1.5; // Multiplicador de lote de cada posicion de recuperacion
-input int     InpMaxRecoveryTrades         = 3;   // Maximo de operaciones de recuperacion por cesta
-input double  InpBasketTP_ATRMult          = 0.2; // TP conjunto: X*ATR sobre el precio medio ponderado
+input double  InpGridDistanceATRMultiplier = 1.5; // Distancia en contra (x ATR) para abrir posicion de recuperacion [opt 0.5-3.0 step 0.1]
+input double  InpMartingaleMultiplier      = 1.5; // Multiplicador de lote de cada posicion de recuperacion [opt 1.1-2.5 step 0.1]
+input int     InpMaxRecoveryTrades         = 3;   // Maximo de operaciones de recuperacion por cesta [opt 1-5 step 1]
+input double  InpBasketTP_ATRMult          = 0.2; // TP conjunto: X*ATR sobre el precio medio ponderado [opt 0.1-1.0 step 0.05]
 
 input string  Inp_Section7        = "===== EJECUCION =====";
 input int     InpSlippagePts      = 2;       // Slippage maximo (puntos)
@@ -99,7 +100,7 @@ input int     InpMaxRetries       = 3;       // Reintentos en error de trading
 input int     InpRetryDelayMs     = 500;     // Delay entre reintentos (ms)
 
 input string  Inp_Section8        = "===== REGLAS ESPECIALES =====";
-input int     InpMaxConsecLosses  = 4;       // Pausa tras N perdidas seguidas
+input int     InpMaxConsecLosses  = 4;       // Pausa tras N perdidas seguidas [opt 2-8 step 1]
 input int     InpBarsWaitAfterClose = 1;     // Esperar N velas tras cierre para reentrar
 
 //====================== GLOBALES =====================================
@@ -495,6 +496,9 @@ bool ValidateStopLevel(ENUM_ORDER_TYPE type, double entryPrice, double tp)
 //+------------------------------------------------------------------+
 double CalcInitialLot()
   {
+   if(InpUseFixedLot)
+      return(NormalizeLot(InpFixedLot));
+
    double atr[1];
    if(CopyBuffer(handleATR, 0, 1, 1, atr) < 1)
       return(InpFixedLot);
