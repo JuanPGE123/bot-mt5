@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Login · Scalping Analytics{% endblock %}
+{% block content_noauth %}
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-brand">
+            <span class="brand-icon big">&#9650;&#9660;</span>
+            <h1>Scalping<strong>Analytics</strong></h1>
+            <p>Backtesting profesional · Sin APIs externas</p>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('auth.login') }}" class="login-form">
+            <label for="username">Usuario</label>
+            <input type="text" id="username" name="username" autocomplete="username" required autofocus>
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+            <button type="submit">Ingresar</button>
+        </form>
+        <p class="demo-hint">¿Solo quieres explorar? Ingresa con <strong>{{ demo_username }}</strong> / <code>demo1234</code> (datos ficticios, showcase).</p>
+    </div>
+</div>
+{% endblock %}

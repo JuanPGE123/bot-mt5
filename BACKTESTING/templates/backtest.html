@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Backtesting Scalping · Scalping Analytics{% endblock %}
+{% block content %}
+<h1 class="page-title">Backtesting y Análisis de Scalping</h1>
+<p class="page-subtitle">Soportes/Resistencias · Fibonacci (50% / 61.8%) · ATR · Win-rate · TP/SL sugeridos · Análisis Multi-Temporal</p>
+
+<div class="backtest-layout">
+    <div class="backtest-main">
+        <div class="panel">
+            <p class="page-subtitle">CSV: solo temporalidades de 1H en adelante (1H, 4H, 1D, 1W). Imágenes: sube las 3 capturas del mercado para el análisis de confluencia.</p>
+            <form id="backtest-form" class="form-grid">
+                <div class="field">
+                    <label for="csv_file">CSV histórico (obligatorio, &ge;1H)</label>
+                    <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+                </div>
+                <div class="field">
+                    <label for="image_macro">Imagen Macro (1D/1W)</label>
+                    <input type="file" id="image_macro" name="image_macro" accept="image/*">
+                </div>
+                <div class="field">
+                    <label for="image_intermedia">Imagen Intermedia (4H)</label>
+                    <input type="file" id="image_intermedia" name="image_intermedia" accept="image/*">
+                </div>
+                <div class="field">
+                    <label for="image_micro">Imagen Micro (1H)</label>
+                    <input type="file" id="image_micro" name="image_micro" accept="image/*">
+                </div>
+                <div class="field field-btn">
+                    <button type="submit" class="btn-primary">Ejecutar Backtest</button>
+                </div>
+                {% if is_demo %}
+                <div class="field field-btn">
+                    <button type="button" id="run-demo-btn" class="btn-secondary">Cargar Backtest de Ejemplo (Demo)</button>
+                </div>
+                {% endif %}
+            </form>
+            <div id="backtest-status" class="status-line"></div>
+        </div>
+
+        <div id="backtest-results" class="hidden">
+            <div class="grid-2">
+                <div class="panel">
+                    <h3>Sugerencia TP / SL</h3>
+                    <div id="tp-sl-box" class="kpi-box"></div>
+                </div>
+                <div class="panel">
+                    <h3>Estadísticas Scalping</h3>
+                    <div id="stats-box" class="kpi-box"></div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <h3>Soportes y Resistencias</h3>
+                    <div id="sr-box"></div>
+                </div>
+                <div class="panel">
+                    <h3>Retrocesos de Fibonacci (último impulso)</h3>
+                    <div id="fibo-box"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Win-rate histórico niveles Fibo</h3>
+                <div id="winrate-box"></div>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <h3>Zona de Reversión + Puntos A/B Fibonacci</h3>
+                    <div id="reversal-box"></div>
+                </div>
+                <div class="panel">
+                    <h3>Patrones de Velas y Trampas de Mercado</h3>
+                    <div id="patterns-box"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Confluencia Multi-Temporal (Macro / Intermedia / Micro)</h3>
+                <div id="confluencia-box"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Análisis de Imágenes (OCR + Zonas visuales)</h3>
+                <div id="images-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="news-panel">
+        <div class="panel">
+            <h3>Noticias Fundamentales</h3>
+            <div class="field">
+                <select id="news-pair-select">
+                    <option value="EURUSD">EURUSD</option>
+                    <option value="GBPUSD">GBPUSD</option>
+                    <option value="USDJPY">USDJPY</option>
+                    <option value="BTCUSD">BTCUSD</option>
+                    <option value="XAUUSD">XAUUSD</option>
+                    <option value="US30">US30</option>
+                    <option value="NAS100">NAS100</option>
+                    <option value="SPX500">SPX500</option>
+                </select>
+                <button id="news-refresh-btn" class="btn-secondary">Actualizar</button>
+            </div>
+            <div id="news-list" class="news-list"></div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/backtest.js') }}"></script>
+{% endblock %}

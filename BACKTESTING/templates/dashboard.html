@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Scalping Analytics{% endblock %}
+{% block content %}
+<h1 class="page-title">Panel Principal</h1>
+<p class="page-subtitle">Bienvenido, {{ session.get('username') }}. Elige un módulo para comenzar.</p>
+
+<div class="card-grid">
+    <a href="{{ url_for('data.index') }}" class="module-card">
+        <span class="module-icon">&#8595;</span>
+        <h2>Extracción de Datos</h2>
+        <p>Descarga histórico OHLCV por par y temporalidad, exporta a CSV.</p>
+    </a>
+    <a href="{{ url_for('backtest.index') }}" class="module-card">
+        <span class="module-icon">&#9776;</span>
+        <h2>Backtesting Scalping</h2>
+        <p>Soportes/Resistencias, Fibonacci 50%/61.8%, ATR, win-rate y noticias.</p>
+    </a>
+    <a href="{{ url_for('journal.index') }}" class="module-card">
+        <span class="module-icon">&#9998;</span>
+        <h2>Diario de Trading</h2>
+        <p>Registra operaciones y monitorea PnL, win-rate y rachas.</p>
+    </a>
+</div>
+{% endblock %}

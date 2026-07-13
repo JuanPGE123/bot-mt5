@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Diario de Trading · Scalping Analytics{% endblock %}
+{% block content %}
+<h1 class="page-title">Diario de Trading</h1>
+<p class="page-subtitle">Registra tus operaciones y monitorea tu consistencia como trader.</p>
+
+<div class="grid-4 stats-row" id="stats-row">
+    <div class="stat-card"><span class="stat-label">PnL Total</span><span class="stat-value" id="stat-pnl">{{ stats.pnl_total }}</span></div>
+    <div class="stat-card"><span class="stat-label">Win Rate</span><span class="stat-value" id="stat-winrate">{{ stats.win_rate }}%</span></div>
+    <div class="stat-card"><span class="stat-label">Racha Actual</span><span class="stat-value" id="stat-streak">{{ stats.racha_actual }} {{ stats.racha_tipo }}</span></div>
+    <div class="stat-card"><span class="stat-label">Total Trades</span><span class="stat-value" id="stat-total">{{ stats.total_trades }}</span></div>
+</div>
+
+<div class="panel" id="psico-alert-panel" data-nivel="{{ riesgo.nivel_riesgo }}">
+    <h3>Alerta Psicológica — No Quemar la Cuenta</h3>
+    <p class="kpi-row"><span class="label">Nivel de riesgo</span><span class="value">{{ riesgo.nivel_riesgo|upper }}</span></p>
+    <p class="status-line">{{ riesgo.recomendacion_principal }}</p>
+    {% if riesgo.alertas %}
+    <ul id="psico-alertas-list">
+        {% for a in riesgo.alertas %}<li>{{ a }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h3>Nueva Operación</h3>
+    <form id="trade-form" class="form-grid">
+        <div class="field"><label>Fecha</label><input type="date" name="fecha" required></div>
+        <div class="field"><label>Par</label><input type="text" name="par" placeholder="EURUSD" required></div>
+        <div class="field"><label>Dirección</label>
+            <select name="direccion"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
+        </div>
+        <div class="field"><label>Entrada</label><input type="number" step="any" name="entrada" required></div>
+        <div class="field"><label>Stop Loss</label><input type="number" step="any" name="stop_loss" required></div>
+        <div class="field"><label>Take Profit</label><input type="number" step="any" name="take_profit" required></div>
+        <div class="field"><label>Precio de Salida</label><input type="number" step="any" name="precio_salida"></div>
+        <div class="field field-wide"><label>Notas</label><input type="text" name="notas" placeholder="Contexto de la operación"></div>
+        <div class="field field-btn"><button type="submit" class="btn-primary">Registrar Operación</button></div>
+    </form>
+    <div id="trade-status" class="status-line"></div>
+</div>
+
+<div class="panel">
+    <h3>Psicología Operativa</h3>
+    <p class="page-subtitle">Documenta tu experiencia emocional en esta operación. Enfoque: no quemar la cuenta.</p>
+    <form id="psico-form" class="form-grid">
+        <div class="field"><label>Emoción antes</label>
+            <select name="emocion_antes">
+                <option value="">-- Selecciona --</option>
+                <option>Confianza</option><option>Calma</option><option>Enfocado</option>
+                <option>Ansiedad</option><option>Duda</option><option>Frustración</option><option>Euforia</option>
+            </select>
+        </div>
+        <div class="field"><label>Emoción durante</label>
+            <select name="emocion_durante">
+                <option value="">-- Selecciona --</option>
+                <option>Confianza</option><option>Calma</option><option>Enfocado</option>
+                <option>Ansiedad</option><option>Duda</option><option>Frustración</option><option>Euforia</option>
+            </select>
+        </div>
+        <div class="field"><label>Emoción después</label>
+            <select name="emocion_despues">
+                <option value="">-- Selecciona --</option>
+                <option>Confianza</option><option>Calma</option><option>Enfocado</option>
+                <option>Ansiedad</option><option>Duda</option><option>Frustración</option><option>Euforia</option>
+            </select>
+        </div>
+        <div class="field"><label>Nivel de estrés (1-5)</label>
+            <select name="nivel_estres">
+                <option value="1">1 - Muy bajo</option><option value="2">2 - Bajo</option>
+                <option value="3">3 - Medio</option><option value="4">4 - Alto</option><option value="5">5 - Muy alto</option>
+            </select>
+        </div>
+        <div class="field"><label>¿Cumpliste tu plan?</label>
+            <select name="cumplio_plan"><option value="1">Sí</option><option value="0">No</option></select>
+        </div>
+        <div class="field field-wide"><label>Recomendaciones a tener en cuenta</label>
+            <input type="text" name="recomendaciones" placeholder="Ej: esperar confirmación de vela, no operar tras 2 pérdidas seguidas">
+        </div>
+    </form>
+    <p class="status-line">Estos campos se guardan junto con la última operación registrada arriba (mismo formulario de envío).</p>
+</div>
+
+<div class="panel">
+    <h3>Historial</h3>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>Fecha</th><th>Par</th><th>Dir.</th><th>Entrada</th><th>SL</th><th>TP</th><th>Salida</th><th>PnL</th><th>Resultado</th><th></th></tr>
+            </thead>
+            <tbody id="trades-tbody">
+                {% for t in trades %}
+                <tr data-id="{{ t.id }}">
+                    <td>{{ t.fecha }}</td>
+                    <td>{{ t.par }}</td>
+                    <td>{{ t.direccion }}</td>
+                    <td>{{ t.entrada }}</td>
+                    <td>{{ t.stop_loss }}</td>
+                    <td>{{ t.take_profit }}</td>
+                    <td>{{ t.precio_salida if t.precio_salida is not none else '-' }}</td>
+                    <td class="{{ 'pnl-pos' if (t.pnl or 0) > 0 else ('pnl-neg' if (t.pnl or 0) < 0 else '') }}">{{ t.pnl if t.pnl is not none else '-' }}</td>
+                    <td>{{ t.resultado or '-' }}</td>
+                    <td><button class="btn-danger delete-trade-btn" data-id="{{ t.id }}">Eliminar</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/journal.js') }}"></script>
+{% endblock %}

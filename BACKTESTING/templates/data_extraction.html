@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Extracción de Datos · Scalping Analytics{% endblock %}
+{% block content %}
+<h1 class="page-title">Extracción de Datos Históricos</h1>
+<p class="page-subtitle">Descarga histórico OHLCV usando yfinance (sin APIs comerciales) hasta el instante exacto de la consulta.</p>
+
+<div class="panel">
+    <div class="form-row">
+        <div class="field">
+            <label for="pair-select">Par / Mercado</label>
+            <select id="pair-select">
+                {% for p in pares %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label for="tf-select">Temporalidad</label>
+            <select id="tf-select">
+                {% for t in temporalidades %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="field">
+            <label for="meses-input">Ventana histórica (meses)</label>
+            <input type="number" id="meses-input" min="1" max="60" value="{{ meses_default }}">
+        </div>
+        <div class="field field-btn">
+            <button id="fetch-btn" class="btn-primary">Consultar Histórico</button>
+        </div>
+    </div>
+    <div id="fetch-status" class="status-line"></div>
+</div>
+
+<div id="result-panel" class="panel hidden">
+    <div class="panel-header">
+        <h3>Vista previa (últimas 15 velas)</h3>
+        <a id="download-link" class="btn-secondary" href="#">Descargar CSV completo</a>
+    </div>
+    <div class="table-wrapper">
+        <table id="preview-table"><thead></thead><tbody></tbody></table>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/data_extraction.js') }}"></script>
+{% endblock %}

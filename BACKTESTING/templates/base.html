@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Scalping Analytics{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+{% if session.get('logged_in') %}
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="brand-icon">&#9650;&#9660;</span>
+            <span class="brand-name">Scalping<strong>Analytics</strong></span>
+        </div>
+        <nav class="nav-menu">
+            <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.path == '/dashboard' else '' }}">
+                <span class="icon">&#9635;</span> Dashboard
+            </a>
+            <a href="{{ url_for('data.index') }}" class="{{ 'active' if '/data' in request.path else '' }}">
+                <span class="icon">&#8595;</span> Extracción de Datos
+            </a>
+            <a href="{{ url_for('backtest.index') }}" class="{{ 'active' if '/backtest' in request.path else '' }}">
+                <span class="icon">&#9776;</span> Backtesting Scalping
+            </a>
+            <a href="{{ url_for('journal.index') }}" class="{{ 'active' if '/journal' in request.path else '' }}">
+                <span class="icon">&#9998;</span> Diario de Trading
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if session.get('is_demo') %}
+            <span class="demo-badge">MODO DEMO · datos ficticios</span>
+            {% endif %}
+            <span class="user-chip">{{ session.get('username') }}</span>
+            <a href="{{ url_for('auth.logout') }}" class="logout-btn">Salir</a>
+        </div>
+    </aside>
+    <main class="content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</div>
+{% else %}
+    {% block content_noauth %}{% endblock %}
+{% endif %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
