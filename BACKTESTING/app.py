@@ -13,6 +13,7 @@ from routes.data import data_bp
 from routes.backtest import backtest_bp
 from routes.news import news_bp
 from routes.journal import journal_bp
+from routes.entradas import entradas_bp
 
 
 def create_app():
@@ -32,6 +33,7 @@ def create_app():
     app.register_blueprint(backtest_bp)
     app.register_blueprint(news_bp)
     app.register_blueprint(journal_bp)
+    app.register_blueprint(entradas_bp)
 
     @app.route("/")
     def root():

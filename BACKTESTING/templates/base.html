@@ -26,6 +26,9 @@
             <a href="{{ url_for('backtest.index') }}" class="{{ 'active' if '/backtest' in request.path else '' }}">
                 <span class="icon">&#9776;</span> Backtesting Scalping
             </a>
+            <a href="{{ url_for('entradas.index') }}" class="{{ 'active' if '/entradas' in request.path else '' }}">
+                <span class="icon">&#8644;</span> Entradas
+            </a>
             <a href="{{ url_for('journal.index') }}" class="{{ 'active' if '/journal' in request.path else '' }}">
                 <span class="icon">&#9998;</span> Diario de Trading
             </a>

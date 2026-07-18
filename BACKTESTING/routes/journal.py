@@ -9,8 +9,8 @@ incumplimiento del plan) y alertar al usuario antes de que escalen.
 from flask import Blueprint, render_template, request, jsonify, session
 
 from routes.auth import login_required
-from config import DEMO_DB_PATH
-from models import add_trade, get_all_trades, delete_trade, compute_journal_stats, evaluate_psychological_risk
+from config import DEMO_DB_PATH, PAIR_TICKER_MAP
+from models import add_trade, get_all_trades, delete_trade, clear_trades, compute_journal_stats, evaluate_psychological_risk
 
 journal_bp = Blueprint("journal", __name__, url_prefix="/journal")
 
@@ -28,7 +28,10 @@ def index():
     trades = get_all_trades(db_path)
     stats = compute_journal_stats(trades)
     riesgo = evaluate_psychological_risk(trades)
-    return render_template("journal.html", trades=trades, stats=stats, riesgo=riesgo)
+    return render_template(
+        "journal.html", trades=trades, stats=stats, riesgo=riesgo,
+        pares=sorted(PAIR_TICKER_MAP.keys()),
+    )
 
 
 @journal_bp.route("/add", methods=["POST"])
@@ -92,7 +95,8 @@ def add():
     trades = get_all_trades(db_path)
     stats = compute_journal_stats(trades)
     riesgo = evaluate_psychological_risk(trades)
-    return jsonify({"ok": True, "trade_id": trade_id, "stats": stats, "riesgo": riesgo})
+    trade_creado = next((t for t in trades if t["id"] == trade_id), None)
+    return jsonify({"ok": True, "trade_id": trade_id, "trade": trade_creado, "stats": stats, "riesgo": riesgo})
 
 
 @journal_bp.route("/delete/<int:trade_id>", methods=["POST"])
@@ -100,6 +104,17 @@ def add():
 def delete(trade_id):
     db_path = _db_path_actual()
     delete_trade(trade_id, db_path=db_path)
+    trades = get_all_trades(db_path)
+    stats = compute_journal_stats(trades)
+    riesgo = evaluate_psychological_risk(trades)
+    return jsonify({"ok": True, "stats": stats, "riesgo": riesgo})
+
+
+@journal_bp.route("/clear", methods=["POST"])
+@login_required
+def clear():
+    db_path = _db_path_actual()
+    clear_trades(db_path=db_path)
     trades = get_all_trades(db_path)
     stats = compute_journal_stats(trades)
     riesgo = evaluate_psychological_risk(trades)

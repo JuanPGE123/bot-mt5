@@ -404,6 +404,54 @@ def suggest_tp_sl(df: pd.DataFrame, direction: str, sr: dict, fib_levels: list, 
 
 
 # ---------------------------------------------------------------------------
+# Sugerencia de tipo de orden (mercado / limit / stop)
+# ---------------------------------------------------------------------------
+def suggest_order_type(direction: str, precio_actual: float, zona_entrada: dict, atr: float, trampas: list = None) -> dict:
+    """
+    Traduce el análisis (zona Fibo clave + ATR + trampas de liquidez) en un
+    tipo de orden ejecutable, tal como lo decidiría un trader manual:
+      - Mercado: el precio ya está dentro de la zona clave (o hubo una
+        trampa de liquidez reciente que confirma la reversión ya).
+      - Limit (Buy/Sell Limit): el precio se alejó de la zona en sentido
+        contrario a la tendencia -> se espera el retroceso hacia la zona.
+      - Stop (Buy/Sell Stop): el precio ya superó la zona en el sentido de
+        la tendencia sin retroceder -> se espera ruptura confirmada.
+    """
+    trampas = trampas or []
+    precio_zona = zona_entrada["precio"]
+    tolerancia = atr * 0.3
+    distancia = precio_actual - precio_zona
+    en_zona = abs(distancia) <= tolerancia
+    trampa_reciente = any(t["idx"] <= 3 for t in trampas)
+
+    if en_zona or trampa_reciente:
+        tipo_orden = "Compra a Mercado" if direction == "alcista" else "Venta a Mercado"
+        precio_entrada = round(precio_actual, 5)
+        motivo = (
+            "Precio ya está dentro de la zona Fibo clave"
+            if en_zona
+            else "Trampa de liquidez reciente confirma reversión: entrar ya, sin esperar retroceso"
+        )
+    elif (direction == "alcista" and distancia > 0) or (direction == "bajista" and distancia < 0):
+        tipo_orden = "Buy Limit" if direction == "alcista" else "Sell Limit"
+        precio_entrada = round(precio_zona, 5)
+        motivo = f"Precio se alejó de la zona clave; colocar {tipo_orden} para esperar el retroceso"
+    else:
+        tipo_orden = "Buy Stop" if direction == "alcista" else "Sell Stop"
+        precio_entrada = (
+            round(precio_actual + atr * 0.5, 5) if direction == "alcista" else round(precio_actual - atr * 0.5, 5)
+        )
+        motivo = f"Precio superó la zona clave sin retroceso; colocar {tipo_orden} para confirmar ruptura"
+
+    return {
+        "tipo_orden": tipo_orden,
+        "precio_entrada_sugerido": precio_entrada,
+        "en_zona_actualmente": en_zona,
+        "motivo": motivo,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Patrones de velas (reversión / continuidad) — "frescos" = solo velas recientes
 # ---------------------------------------------------------------------------
 def detect_candle_patterns(df: pd.DataFrame, n_recientes: int = 30):
@@ -615,6 +663,7 @@ def run_full_analysis(df: pd.DataFrame) -> dict:
     volatilidad = session_volatility(df)
     winrate_fibo = fib_level_winrate(df)
     tp_sl = suggest_tp_sl(df, impulso["direccion"], sr, fibo, atr)
+    orden = suggest_order_type(impulso["direccion"], tp_sl["precio_actual"], tp_sl["zona_entrada_fibo"], atr)
 
     resultado = {
         "temporalidad_detectada": temporalidad,
@@ -626,6 +675,7 @@ def run_full_analysis(df: pd.DataFrame) -> dict:
         "volatilidad_sesion": volatilidad,
         "win_rate_fibo": winrate_fibo,
         "sugerencia_tp_sl": tp_sl,
+        "sugerencia_orden": orden,
     }
 
     # Zonas de reversión, patrones de velas y trampas de liquidez solo aplican
@@ -638,6 +688,9 @@ def run_full_analysis(df: pd.DataFrame) -> dict:
         resultado["patrones_de_velas"] = patrones
         resultado["trampas_de_mercado"] = trampas
         resultado["zona_reversion_fibonacci"] = detect_reversal_setup(df, sr, impulso, patrones, trampas)
+        resultado["sugerencia_orden"] = suggest_order_type(
+            impulso["direccion"], tp_sl["precio_actual"], tp_sl["zona_entrada_fibo"], atr, trampas
+        )
     else:
         resultado["patrones_de_velas"] = []
         resultado["trampas_de_mercado"] = []

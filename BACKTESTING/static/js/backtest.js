@@ -1,10 +1,12 @@
 const TIMEFRAMES = ["macro", "intermedia", "micro"];
+const STORAGE_KEY = "bt_last_result";
 
 document.getElementById("backtest-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const statusEl = document.getElementById("backtest-status");
     const resultsEl = document.getElementById("backtest-results");
 
+    const par = document.getElementById("par_select").value;
     const formData = new FormData();
     formData.append("csv_file", document.getElementById("csv_file").files[0]);
     TIMEFRAMES.forEach((tf) => {
@@ -19,7 +21,7 @@ document.getElementById("backtest-form").addEventListener("submit", async (e) =>
     try {
         const resp = await fetch("/backtest/run", { method: "POST", body: formData });
         const data = await resp.json();
-        manejarRespuesta(data, statusEl, resultsEl);
+        manejarRespuesta(data, statusEl, resultsEl, par);
     } catch (err) {
         statusEl.textContent = "Error de red: " + err;
         statusEl.className = "status-line error";
@@ -31,13 +33,14 @@ if (demoBtn) {
     demoBtn.addEventListener("click", async () => {
         const statusEl = document.getElementById("backtest-status");
         const resultsEl = document.getElementById("backtest-results");
+        const par = document.getElementById("par_select").value;
         statusEl.textContent = "Cargando backtest de ejemplo (Demo)...";
         statusEl.className = "status-line";
         resultsEl.classList.add("hidden");
         try {
             const resp = await fetch("/backtest/run-demo", { method: "POST" });
             const data = await resp.json();
-            manejarRespuesta(data, statusEl, resultsEl);
+            manejarRespuesta(data, statusEl, resultsEl, par);
         } catch (err) {
             statusEl.textContent = "Error de red: " + err;
             statusEl.className = "status-line error";
@@ -45,7 +48,7 @@ if (demoBtn) {
     });
 }
 
-function manejarRespuesta(data, statusEl, resultsEl) {
+function manejarRespuesta(data, statusEl, resultsEl, par) {
     if (!data.ok) {
         statusEl.textContent = "Error: " + data.error;
         statusEl.className = "status-line error";
@@ -53,13 +56,96 @@ function manejarRespuesta(data, statusEl, resultsEl) {
     }
     statusEl.textContent = "Backtest completado.";
     statusEl.className = "status-line success";
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ data, par }));
     renderAnalysis(data.analisis);
     renderImages(data.analisis_imagenes);
     renderConfluencia(data.confluencia_multitemporal);
     resultsEl.classList.remove("hidden");
+    document.getElementById("enviar-entrada-btn").classList.remove("hidden");
 }
 
+// --- Restaurar el último análisis al volver a este módulo (no se pierde al navegar) ---
+(function restaurarUltimoAnalisis() {
+    const guardado = sessionStorage.getItem(STORAGE_KEY);
+    if (!guardado) return;
+    try {
+        const { data, par } = JSON.parse(guardado);
+        const statusEl = document.getElementById("backtest-status");
+        const resultsEl = document.getElementById("backtest-results");
+        if (par) document.getElementById("par_select").value = par;
+        statusEl.textContent = "Mostrando el último backtest ejecutado en esta sesión.";
+        statusEl.className = "status-line";
+        manejarRespuesta(data, statusEl, resultsEl, par);
+    } catch (err) {
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+})();
+
+document.getElementById("clear-backtest-btn").addEventListener("click", () => {
+    if (!confirm("¿Limpiar el análisis actual de este módulo?")) return;
+    sessionStorage.removeItem(STORAGE_KEY);
+    document.getElementById("backtest-form").reset();
+    document.getElementById("backtest-results").classList.add("hidden");
+    document.getElementById("enviar-entrada-btn").classList.add("hidden");
+    document.getElementById("enviar-entrada-status").textContent = "";
+    const statusEl = document.getElementById("backtest-status");
+    statusEl.textContent = "";
+    statusEl.className = "status-line";
+});
+
+document.getElementById("enviar-entrada-btn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("enviar-entrada-status");
+    const guardado = sessionStorage.getItem(STORAGE_KEY);
+    if (!guardado) return;
+    const { data, par } = JSON.parse(guardado);
+    const a = data.analisis;
+    const orden = a.sugerencia_orden;
+    const tpSl = a.sugerencia_tp_sl;
+    const direccion = a.ultimo_impulso.direccion === "alcista" ? "COMPRA" : "VENTA";
+
+    const payload = {
+        par: par || "N/D",
+        direccion,
+        tipo_orden: orden.tipo_orden,
+        precio_entrada: orden.precio_entrada_sugerido,
+        stop_loss: tpSl.stop_loss,
+        take_profit: tpSl.take_profit,
+        riesgo_beneficio: tpSl.riesgo_beneficio,
+        temporalidad: a.temporalidad_detectada.clasificacion,
+        motivo: orden.motivo,
+        origen: "backtest",
+    };
+
+    try {
+        const resp = await fetch("/entradas/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        const result = await resp.json();
+        if (!result.ok) {
+            statusEl.textContent = "Error: " + result.error;
+            statusEl.className = "status-line error";
+            return;
+        }
+        statusEl.textContent = "Entrada enviada al módulo Entradas.";
+        statusEl.className = "status-line success";
+    } catch (err) {
+        statusEl.textContent = "Error de red: " + err;
+        statusEl.className = "status-line error";
+    }
+});
+
 function renderAnalysis(a) {
+    // Tipo de orden sugerida (mercado / limit / stop)
+    const orden = a.sugerencia_orden;
+    document.getElementById("orden-box").innerHTML = `
+        <div class="kpi-row"><span class="label">Tipo de orden</span><span class="value">${orden.tipo_orden}</span></div>
+        <div class="kpi-row"><span class="label">Precio de entrada</span><span class="value">${fmtNum(orden.precio_entrada_sugerido)}</span></div>
+        <div class="kpi-row"><span class="label">¿En zona ahora?</span><span class="value">${orden.en_zona_actualmente ? "Sí" : "No"}</span></div>
+        <div class="kpi-row"><span class="label">Motivo</span><span class="value">${orden.motivo}</span></div>
+    `;
+
     // TP / SL
     const tpSl = a.sugerencia_tp_sl;
     document.getElementById("tp-sl-box").innerHTML = `
@@ -180,6 +266,131 @@ function renderConfluencia(c) {
         <div class="kpi-row"><span class="label">Dirección impulso (CSV)</span><span class="value">${c.impulso_csv_direccion ?? "-"}</span></div>
         <div class="kpi-row"><span class="label">¿Alineado con el CSV?</span><span class="value">${c.alineado_con_impulso_csv === null ? "N/D" : (c.alineado_con_impulso_csv ? "Sí" : "No")}</span></div>
     `;
+}
+
+// ---------------------------------------------------------------------------
+// Módulo de Análisis de Backtesting Avanzado (Multi-Temporal: Macro/Intermedio/Micro)
+// ---------------------------------------------------------------------------
+const TIMEFRAMES_MTF = ["macro", "intermedio", "micro"];
+const MTF_STORAGE_KEY = "bt_last_mtf_result";
+
+document.getElementById("mtf-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const statusEl = document.getElementById("mtf-status");
+    const resultsEl = document.getElementById("mtf-results");
+
+    const formData = new FormData();
+    TIMEFRAMES_MTF.forEach((tf) => {
+        formData.append(`csv_${tf}`, document.getElementById(`csv_${tf}`).files[0]);
+    });
+
+    statusEl.textContent = "Ejecutando análisis multi-temporal...";
+    statusEl.className = "status-line";
+    resultsEl.classList.add("hidden");
+
+    try {
+        const resp = await fetch("/backtest/run-mtf", { method: "POST", body: formData });
+        const data = await resp.json();
+        if (!data.ok) {
+            statusEl.textContent = "Error: " + data.error;
+            statusEl.className = "status-line error";
+            return;
+        }
+        statusEl.textContent = "Análisis multi-temporal completado.";
+        statusEl.className = "status-line success";
+        sessionStorage.setItem(MTF_STORAGE_KEY, JSON.stringify(data.mtf));
+        renderMtf(data.mtf);
+        resultsEl.classList.remove("hidden");
+    } catch (err) {
+        statusEl.textContent = "Error de red: " + err;
+        statusEl.className = "status-line error";
+    }
+});
+
+(function restaurarUltimoMtf() {
+    const guardado = sessionStorage.getItem(MTF_STORAGE_KEY);
+    if (!guardado) return;
+    try {
+        const mtf = JSON.parse(guardado);
+        document.getElementById("mtf-status").textContent = "Mostrando el último análisis multi-temporal ejecutado en esta sesión.";
+        renderMtf(mtf);
+        document.getElementById("mtf-results").classList.remove("hidden");
+    } catch (err) {
+        sessionStorage.removeItem(MTF_STORAGE_KEY);
+    }
+})();
+
+function renderMtf(mtf) {
+    const r = mtf.resumen_general;
+    document.getElementById("mtf-resumen-box").innerHTML = `
+        <div class="kpi-row"><span class="label">Dirección Macro (prioridad)</span><span class="value">${r.direccion_macro}</span></div>
+        <div class="kpi-row"><span class="label">Precio actual (Micro)</span><span class="value">${fmtNum(r.precio_actual)}</span></div>
+        <div class="kpi-row"><span class="label">Estructura Macro / Intermedio / Micro</span><span class="value">${r.estructura.macro} / ${r.estructura.intermedio} / ${r.estructura.micro}</span></div>
+        <div class="kpi-row"><span class="label">Alineación total 3 temporalidades</span><span class="value">${r.alineacion_total ? "Sí" : "No"}</span></div>
+        <div class="kpi-row"><span class="label">Setups de alta probabilidad</span><span class="value">${r.total_setups_alta_probabilidad}</span></div>
+    `;
+
+    const setupsBox = document.getElementById("mtf-setups-box");
+    const setups = mtf.setups_alta_probabilidad || [];
+    if (!setups.length) {
+        setupsBox.innerHTML = '<p class="status-line">Sin confluencia accionable (&ge;2 temporalidades) alineada con la estructura Macro.</p>';
+    } else {
+        setupsBox.innerHTML = setups
+            .map(
+                (s, i) => `
+            <div class="setup-card">
+                <div class="setup-card-header">
+                    <span class="tag-key">#${i + 1} ${s.direccion}</span>
+                    <span>${s.nivel_confluencia}</span>
+                </div>
+                <div class="kpi-row"><span class="label">Entrada sugerida</span><span class="value">${fmtNum(s.precio_entrada_sugerido)} (zona ${fmtNum(s.zona_entrada.min)} – ${fmtNum(s.zona_entrada.max)})</span></div>
+                <div class="kpi-row"><span class="label">Stop Loss</span><span class="value">${fmtNum(s.stop_loss)}</span></div>
+                <div class="kpi-row"><span class="label">Take Profit</span><span class="value">${fmtNum(s.take_profit)}</span></div>
+                <div class="kpi-row"><span class="label">Riesgo/Beneficio</span><span class="value">1 : ${s.riesgo_beneficio}</span></div>
+                <div class="kpi-row"><span class="label">Temporalidades confluentes</span><span class="value">${s.temporalidades_confluentes.join(" + ")}</span></div>
+                <div class="kpi-row"><span class="label">Alternativas de entrada</span><span class="value">${s.alternativas_de_entrada.join(", ")}</span></div>
+            </div>`
+            )
+            .join("");
+    }
+
+    const detalleBox = document.getElementById("mtf-detalle-box");
+    detalleBox.innerHTML = TIMEFRAMES_MTF.map((tf) => {
+        const d = mtf.detalle_por_temporalidad[tf];
+        const fibo = d.fibonacci_retroceso
+            .filter((f) => f.zona_clave)
+            .map((f) => `<div class="fibo-level key"><span>${(f.ratio * 100).toFixed(1)}%</span><span>${fmtNum(f.precio)}</span></div>`)
+            .join("");
+        const sr = d.soportes_resistencias.resistencias
+            .slice(0, 3)
+            .map((z) => `<div class="sr-level"><span>R ${fmtNum(z.nivel)}</span><span>${z.toques} toques</span></div>`)
+            .join("") +
+            d.soportes_resistencias.soportes
+                .slice(0, 3)
+                .map((z) => `<div class="sr-level"><span>S ${fmtNum(z.nivel)}</span><span>${z.toques} toques</span></div>`)
+                .join("");
+        return `<div class="panel">
+            <h4>${tf.toUpperCase()} (peso ${d.peso})</h4>
+            <div class="kpi-row"><span class="label">Dirección</span><span class="value">${d.direccion}</span></div>
+            <div class="kpi-row"><span class="label">Precio actual</span><span class="value">${fmtNum(d.precio_actual)}</span></div>
+            <div class="kpi-row"><span class="label">ATR</span><span class="value">${fmtNum(d.atr)}</span></div>
+            <strong>Fibonacci clave (50% / 61.8%)</strong>${fibo}
+            <strong>SR principales</strong>${sr}
+        </div>`;
+    }).join("");
+
+    const confluenciasBox = document.getElementById("mtf-confluencias-box");
+    const clusters = mtf.confluencias || [];
+    confluenciasBox.innerHTML = clusters.length
+        ? clusters
+              .map(
+                  (c) => `<div class="sr-level">
+                <span>${fmtNum(c.precio_centro)} (${fmtNum(c.zona_min)} – ${fmtNum(c.zona_max)})</span>
+                <span>${c.nivel_confluencia} · ${c.componentes.map((k) => `${k.temporalidad}:${k.origen}`).join(", ")}</span>
+            </div>`
+              )
+              .join("")
+        : '<p class="status-line">Sin clusters detectados.</p>';
 }
 
 // --- Panel de noticias ---

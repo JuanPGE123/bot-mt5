@@ -58,6 +58,25 @@ def init_db(db_path: str | None = None):
     for columna, tipo_sql in PSICOLOGIA_COLUMNS.items():
         if columna not in columnas_existentes:
             conn.execute(f"ALTER TABLE trades ADD COLUMN {columna} {tipo_sql}")
+
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS entradas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            par TEXT NOT NULL,
+            direccion TEXT NOT NULL,           -- COMPRA / VENTA
+            tipo_orden TEXT NOT NULL,           -- Mercado / Buy Limit / Sell Limit / Buy Stop / Sell Stop
+            precio_entrada REAL NOT NULL,
+            stop_loss REAL NOT NULL,
+            take_profit REAL NOT NULL,
+            riesgo_beneficio REAL,
+            temporalidad TEXT,
+            motivo TEXT,
+            origen TEXT NOT NULL DEFAULT 'manual',  -- manual / backtest
+            creado_en TEXT NOT NULL
+        )
+        """
+    )
     conn.commit()
     conn.close()
 
@@ -108,6 +127,65 @@ def get_all_trades(db_path: str | None = None):
 def delete_trade(trade_id: int, db_path: str | None = None):
     conn = get_connection(db_path)
     conn.execute("DELETE FROM trades WHERE id = ?", (trade_id,))
+    conn.commit()
+    conn.close()
+
+
+def clear_trades(db_path: str | None = None):
+    conn = get_connection(db_path)
+    conn.execute("DELETE FROM trades")
+    conn.commit()
+    conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Entradas — oportunidades de compra/venta sugeridas (manual o desde Backtesting)
+# ---------------------------------------------------------------------------
+def add_entrada(data: dict, db_path: str | None = None):
+    conn = get_connection(db_path)
+    cur = conn.execute(
+        """
+        INSERT INTO entradas (par, direccion, tipo_orden, precio_entrada, stop_loss,
+                               take_profit, riesgo_beneficio, temporalidad, motivo, origen, creado_en)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            data["par"],
+            data["direccion"],
+            data["tipo_orden"],
+            data["precio_entrada"],
+            data["stop_loss"],
+            data["take_profit"],
+            data.get("riesgo_beneficio"),
+            data.get("temporalidad", ""),
+            data.get("motivo", ""),
+            data.get("origen", "manual"),
+            data.get("creado_en") or datetime.utcnow().isoformat(),
+        ),
+    )
+    conn.commit()
+    entrada_id = cur.lastrowid
+    conn.close()
+    return entrada_id
+
+
+def get_all_entradas(db_path: str | None = None):
+    conn = get_connection(db_path)
+    rows = conn.execute("SELECT * FROM entradas ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def delete_entrada(entrada_id: int, db_path: str | None = None):
+    conn = get_connection(db_path)
+    conn.execute("DELETE FROM entradas WHERE id = ?", (entrada_id,))
+    conn.commit()
+    conn.close()
+
+
+def clear_entradas(db_path: str | None = None):
+    conn = get_connection(db_path)
+    conn.execute("DELETE FROM entradas")
     conn.commit()
     conn.close()
 
@@ -274,6 +352,7 @@ def seed_demo_data(db_path: str, force: bool = False):
     existentes = conn.execute("SELECT COUNT(*) AS n FROM trades").fetchone()["n"]
     conn.close()
     if existentes > 0 and not force:
+        _seed_demo_entradas(db_path, force)
         return
 
     rng = random.Random(42)
@@ -318,6 +397,39 @@ def seed_demo_data(db_path: str, force: bool = False):
                 "nivel_estres": rng.randint(4, 5) if estres_alto_forzado else rng.randint(1, 3),
                 "cumplio_plan": 0 if estres_alto_forzado else 1,
                 "recomendaciones": "Ejemplo generado automáticamente para el perfil Demo/Showcase.",
+            },
+            db_path=db_path,
+        )
+
+    _seed_demo_entradas(db_path, force)
+
+
+def _seed_demo_entradas(db_path: str, force: bool = False):
+    conn = get_connection(db_path)
+    existentes_entradas = conn.execute("SELECT COUNT(*) AS n FROM entradas").fetchone()["n"]
+    conn.close()
+    if existentes_entradas > 0 and not force:
+        return
+
+    entradas_demo = [
+        ("USDCAD", "COMPRA", "Buy Limit", 1.41500, 1.41300, 1.41700, 1.0, "micro", "Retroceso esperado a zona Fibo 61.8%."),
+        ("EURUSD", "VENTA", "Venta a Mercado", 1.08650, 1.08820, 1.08310, 2.0, "intermedia", "Trampa de liquidez confirma reversión bajista."),
+        ("XAUUSD", "COMPRA", "Buy Stop", 2382.50, 2378.00, 2391.00, 1.9, "micro", "Ruptura confirmada de resistencia clave."),
+        ("GBPUSD", "VENTA", "Sell Limit", 1.26900, 1.27100, 1.26500, 2.0, "intermedia", "Precio se alejó de la zona clave, se espera retroceso."),
+    ]
+    for par, direccion, tipo_orden, entrada, sl, tp, rr, tf, motivo in entradas_demo:
+        add_entrada(
+            {
+                "par": par,
+                "direccion": direccion,
+                "tipo_orden": tipo_orden,
+                "precio_entrada": entrada,
+                "stop_loss": sl,
+                "take_profit": tp,
+                "riesgo_beneficio": rr,
+                "temporalidad": tf,
+                "motivo": motivo,
+                "origen": "backtest",
             },
             db_path=db_path,
         )

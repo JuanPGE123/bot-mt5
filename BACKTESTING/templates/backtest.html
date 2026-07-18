@@ -1,14 +1,69 @@
 {% extends "base.html" %}
 {% block title %}Backtesting Scalping · Scalping Analytics{% endblock %}
 {% block content %}
-<h1 class="page-title">Backtesting y Análisis de Scalping</h1>
-<p class="page-subtitle">Soportes/Resistencias · Fibonacci (50% / 61.8%) · ATR · Win-rate · TP/SL sugeridos · Análisis Multi-Temporal</p>
+<div class="panel-header">
+    <div>
+        <h1 class="page-title">Backtesting y Análisis de Scalping</h1>
+        <p class="page-subtitle">Soportes/Resistencias · Fibonacci (50% / 61.8%) · ATR · Win-rate · TP/SL sugeridos · Análisis Multi-Temporal</p>
+    </div>
+    <button id="clear-backtest-btn" class="btn-danger">Limpiar</button>
+</div>
 
 <div class="backtest-layout">
     <div class="backtest-main">
         <div class="panel">
+            <h2 class="section-title">Módulo de Análisis de Backtesting Avanzado (Multi-Temporal)</h2>
+            <p class="page-subtitle">Cruza 3 CSV (Macro / Intermedio / Micro) y calcula la confluencia real entre Fibonacci (retroceso + extensión) y zonas de Soporte/Resistencia de cada temporalidad. La dirección Macro siempre tiene prioridad.</p>
+            <form id="mtf-form" class="form-grid">
+                <div class="field">
+                    <label for="csv_macro">CSV Macro (1D / 1W)</label>
+                    <input type="file" id="csv_macro" name="csv_macro" accept=".csv" required>
+                </div>
+                <div class="field">
+                    <label for="csv_intermedio">CSV Intermedio (4H)</label>
+                    <input type="file" id="csv_intermedio" name="csv_intermedio" accept=".csv" required>
+                </div>
+                <div class="field">
+                    <label for="csv_micro">CSV Micro (1H)</label>
+                    <input type="file" id="csv_micro" name="csv_micro" accept=".csv" required>
+                </div>
+                <div class="field field-btn">
+                    <button type="submit" class="btn-primary">Ejecutar Análisis Multi-Temporal</button>
+                </div>
+            </form>
+            <div id="mtf-status" class="status-line"></div>
+        </div>
+
+        <div id="mtf-results" class="hidden">
+            <div class="panel">
+                <h3>Resumen General</h3>
+                <div id="mtf-resumen-box" class="kpi-box"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Setups de Alta Probabilidad</h3>
+                <div id="mtf-setups-box"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Detalle por Temporalidad (Fibonacci · SR · ATR)</h3>
+                <div id="mtf-detalle-box" class="grid-3"></div>
+            </div>
+
+            <div class="panel">
+                <h3>Todas las Confluencias Detectadas</h3>
+                <div id="mtf-confluencias-box"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2 class="section-title">Backtest Individual (1 CSV + imágenes)</h2>
             <p class="page-subtitle">CSV: solo temporalidades de 1H en adelante (1H, 4H, 1D, 1W). Imágenes: sube las 3 capturas del mercado para el análisis de confluencia.</p>
             <form id="backtest-form" class="form-grid">
+                <div class="field">
+                    <label for="par_select">Par / Instrumento analizado</label>
+                    <select id="par_select" name="par">{% for p in pares %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+                </div>
                 <div class="field">
                     <label for="csv_file">CSV histórico (obligatorio, &ge;1H)</label>
                     <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
@@ -39,6 +94,12 @@
 
         <div id="backtest-results" class="hidden">
             <div class="grid-2">
+                <div class="panel">
+                    <h3>Sugerencia de Orden</h3>
+                    <div id="orden-box" class="kpi-box"></div>
+                    <button id="enviar-entrada-btn" class="btn-primary hidden">Enviar a Entradas</button>
+                    <div id="enviar-entrada-status" class="status-line"></div>
+                </div>
                 <div class="panel">
                     <h3>Sugerencia TP / SL</h3>
                     <div id="tp-sl-box" class="kpi-box"></div>

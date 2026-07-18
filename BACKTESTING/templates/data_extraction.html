@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Extracción de Datos · Scalping Analytics{% endblock %}
 {% block content %}
-<h1 class="page-title">Extracción de Datos Históricos</h1>
-<p class="page-subtitle">Descarga histórico OHLCV usando yfinance (sin APIs comerciales) hasta el instante exacto de la consulta.</p>
+<div class="panel-header">
+    <div>
+        <h1 class="page-title">Extracción de Datos Históricos</h1>
+        <p class="page-subtitle">Descarga histórico OHLCV usando yfinance (sin APIs comerciales) hasta el instante exacto de la consulta.</p>
+    </div>
+    <button id="clear-data-btn" class="btn-danger">Limpiar</button>
+</div>
 
 <div class="panel">
     <div class="form-row">

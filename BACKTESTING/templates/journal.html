@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Diario de Trading · Scalping Analytics{% endblock %}
 {% block content %}
-<h1 class="page-title">Diario de Trading</h1>
-<p class="page-subtitle">Registra tus operaciones y monitorea tu consistencia como trader.</p>
+<div class="panel-header">
+    <div>
+        <h1 class="page-title">Diario de Trading</h1>
+        <p class="page-subtitle">Registra tus operaciones y monitorea tu consistencia como trader.</p>
+    </div>
+    <button id="clear-journal-btn" class="btn-danger">Limpiar Todo</button>
+</div>
 
 <div class="grid-4 stats-row" id="stats-row">
     <div class="stat-card"><span class="stat-label">PnL Total</span><span class="stat-value" id="stat-pnl">{{ stats.pnl_total }}</span></div>
@@ -26,7 +31,9 @@
     <h3>Nueva Operación</h3>
     <form id="trade-form" class="form-grid">
         <div class="field"><label>Fecha</label><input type="date" name="fecha" required></div>
-        <div class="field"><label>Par</label><input type="text" name="par" placeholder="EURUSD" required></div>
+        <div class="field"><label>Par</label>
+            <select name="par">{% for p in pares %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+        </div>
         <div class="field"><label>Dirección</label>
             <select name="direccion"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
         </div>

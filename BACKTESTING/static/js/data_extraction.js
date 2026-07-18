@@ -1,3 +1,5 @@
+const STORAGE_KEY = "data_last_result";
+
 document.getElementById("fetch-btn").addEventListener("click", async () => {
     const pair = document.getElementById("pair-select").value;
     const timeframe = document.getElementById("tf-select").value;
@@ -23,18 +25,49 @@ document.getElementById("fetch-btn").addEventListener("click", async () => {
             return;
         }
 
-        const nulosMsg = data.nulos_limpiados > 0 ? ` (${data.nulos_limpiados} filas con nulos descartadas)` : "";
-        statusEl.textContent = `${data.filas_totales} velas obtenidas · últimos ${data.ventana_meses} mes(es)${nulosMsg}.`;
-        statusEl.className = "status-line success";
-
-        renderPreview(data.columnas, data.vista_previa);
-        document.getElementById("download-link").href =
-            "/data/download?path=" + encodeURIComponent(data.archivo);
-        resultPanel.classList.remove("hidden");
+        mostrarResultado(data, pair, timeframe, statusEl, resultPanel);
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ data, pair, timeframe }));
     } catch (err) {
         statusEl.textContent = "Error de red: " + err;
         statusEl.className = "status-line error";
     }
+});
+
+function mostrarResultado(data, pair, timeframe, statusEl, resultPanel) {
+    const nulosMsg = data.nulos_limpiados > 0 ? ` (${data.nulos_limpiados} filas con nulos descartadas)` : "";
+    statusEl.textContent = `${data.filas_totales} velas obtenidas · últimos ${data.ventana_meses} mes(es)${nulosMsg}.`;
+    statusEl.className = "status-line success";
+
+    renderPreview(data.columnas, data.vista_previa);
+    document.getElementById("download-link").href =
+        "/data/download?path=" + encodeURIComponent(data.archivo);
+    resultPanel.classList.remove("hidden");
+}
+
+// --- Restaurar el último resultado al volver a este módulo (no se pierde al navegar) ---
+(function restaurarUltimoFetch() {
+    const guardado = sessionStorage.getItem(STORAGE_KEY);
+    if (!guardado) return;
+    try {
+        const { data, pair, timeframe } = JSON.parse(guardado);
+        const statusEl = document.getElementById("fetch-status");
+        const resultPanel = document.getElementById("result-panel");
+        if (pair) document.getElementById("pair-select").value = pair;
+        if (timeframe) document.getElementById("tf-select").value = timeframe;
+        mostrarResultado(data, pair, timeframe, statusEl, resultPanel);
+        statusEl.textContent = "Mostrando la última consulta ejecutada en esta sesión. " + statusEl.textContent;
+    } catch (err) {
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+})();
+
+document.getElementById("clear-data-btn").addEventListener("click", () => {
+    if (!confirm("¿Limpiar el resultado actual de este módulo?")) return;
+    sessionStorage.removeItem(STORAGE_KEY);
+    document.getElementById("result-panel").classList.add("hidden");
+    const statusEl = document.getElementById("fetch-status");
+    statusEl.textContent = "";
+    statusEl.className = "status-line";
 });
 
 function renderPreview(columnas, filas) {

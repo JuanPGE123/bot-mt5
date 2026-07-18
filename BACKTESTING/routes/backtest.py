@@ -11,10 +11,11 @@ import pandas as pd
 from flask import Blueprint, render_template, request, jsonify, session
 from werkzeug.utils import secure_filename
 
-from config import UPLOAD_CSV_DIR, UPLOAD_IMG_DIR, ALLOWED_CSV_EXT, ALLOWED_IMG_EXT, DEMO_FIXTURES_DIR
+from config import UPLOAD_CSV_DIR, UPLOAD_IMG_DIR, ALLOWED_CSV_EXT, ALLOWED_IMG_EXT, DEMO_FIXTURES_DIR, PAIR_TICKER_MAP
 from routes.auth import login_required
 from services.strategy_engine import run_full_analysis
 from services.image_analyzer import analyze_chart_image, evaluate_multi_timeframe, TIMEFRAMES_VISUALES
+from services.mtf_confluence import run_mtf_analysis, TIMEFRAMES_MTF
 
 backtest_bp = Blueprint("backtest", __name__, url_prefix="/backtest")
 
@@ -69,7 +70,10 @@ def _analizar(csv_path: str, imagenes_por_tf: dict):
 @backtest_bp.route("/", methods=["GET"])
 @login_required
 def index():
-    return render_template("backtest.html", is_demo=session.get("is_demo", False))
+    return render_template(
+        "backtest.html", is_demo=session.get("is_demo", False),
+        pares=sorted(PAIR_TICKER_MAP.keys()),
+    )
 
 
 @backtest_bp.route("/run", methods=["POST"])
@@ -108,6 +112,42 @@ def run():
         return jsonify({"ok": False, "error": f"Error procesando el CSV: {e}"}), 400
 
     return jsonify(resultado)
+
+
+@backtest_bp.route("/run-mtf", methods=["POST"])
+@login_required
+def run_mtf():
+    """
+    Módulo de Análisis de Backtesting Avanzado: recibe 3 CSV históricos, uno
+    por cada temporalidad exacta (Macro, Intermedio, Micro), y devuelve el
+    dashboard de confluencia (Fibonacci + zonas SR cruzadas) con los Setups
+    de Alta Probabilidad ya calculados.
+    """
+    csv_paths = {}
+    try:
+        os.makedirs(UPLOAD_CSV_DIR, exist_ok=True)
+        for tf in TIMEFRAMES_MTF:
+            campo = f"csv_{tf}"
+            if campo not in request.files or request.files[campo].filename == "":
+                return jsonify({"ok": False, "error": f"Falta el CSV de la temporalidad '{tf}'."}), 400
+
+            csv_file = request.files[campo]
+            if not _allowed(csv_file.filename, ALLOWED_CSV_EXT):
+                return jsonify({"ok": False, "error": f"Archivo CSV inválido para '{tf}'."}), 400
+
+            csv_name = f"{uuid.uuid4().hex}_{secure_filename(csv_file.filename)}"
+            csv_path = os.path.join(UPLOAD_CSV_DIR, csv_name)
+            csv_file.save(csv_path)
+            csv_paths[tf] = csv_path
+
+        dfs = {tf: pd.read_csv(path) for tf, path in csv_paths.items()}
+        resultado = run_mtf_analysis(dfs["macro"], dfs["intermedio"], dfs["micro"])
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"Error procesando el análisis multi-temporal: {e}"}), 400
+
+    return jsonify({"ok": True, "mtf": resultado})
 
 
 @backtest_bp.route("/run-demo", methods=["POST"])

@@ -25,14 +25,48 @@ document.getElementById("trade-form").addEventListener("submit", async (e) => {
         statusEl.className = "status-line success";
         updateStats(data.stats);
         renderPsicoAlert(data.riesgo);
-        setTimeout(() => window.location.reload(), 800);
+        if (data.trade) prependTradeRow(data.trade);
+        form.reset();
+        psicoForm.reset();
     } catch (err) {
         statusEl.textContent = "Error de red: " + err;
         statusEl.className = "status-line error";
     }
 });
 
-document.querySelectorAll(".delete-trade-btn").forEach((btn) => {
+function prependTradeRow(t) {
+    const tbody = document.getElementById("trades-tbody");
+    const pnlClass = (t.pnl || 0) > 0 ? "pnl-pos" : ((t.pnl || 0) < 0 ? "pnl-neg" : "");
+    const tr = document.createElement("tr");
+    tr.dataset.id = t.id;
+    tr.innerHTML = `
+        <td>${t.fecha}</td>
+        <td>${t.par}</td>
+        <td>${t.direccion}</td>
+        <td>${t.entrada}</td>
+        <td>${t.stop_loss}</td>
+        <td>${t.take_profit}</td>
+        <td>${t.precio_salida ?? "-"}</td>
+        <td class="${pnlClass}">${t.pnl ?? "-"}</td>
+        <td>${t.resultado ?? "-"}</td>
+        <td><button class="btn-danger delete-trade-btn" data-id="${t.id}">Eliminar</button></td>
+    `;
+    tbody.prepend(tr);
+    attachDeleteHandler(tr.querySelector(".delete-trade-btn"));
+}
+
+// --- Prellenar el formulario si se llega desde "Enviar a Diario" (módulo Entradas) ---
+(function prellenarDesdeEntradas() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("par")) return;
+    const form = document.getElementById("trade-form");
+    ["par", "direccion", "entrada", "stop_loss", "take_profit"].forEach((campo) => {
+        if (params.has(campo) && form.elements[campo]) form.elements[campo].value = params.get(campo);
+    });
+    document.getElementById("trade-status").textContent = "Datos precargados desde Entradas. Completa fecha y notas para registrar.";
+})();
+
+function attachDeleteHandler(btn) {
     btn.addEventListener("click", async () => {
         const id = btn.dataset.id;
         if (!confirm("¿Eliminar esta operación del diario?")) return;
@@ -44,6 +78,18 @@ document.querySelectorAll(".delete-trade-btn").forEach((btn) => {
             renderPsicoAlert(data.riesgo);
         }
     });
+}
+document.querySelectorAll(".delete-trade-btn").forEach(attachDeleteHandler);
+
+document.getElementById("clear-journal-btn").addEventListener("click", async () => {
+    if (!confirm("¿Borrar TODAS las operaciones del diario? Esta acción no se puede deshacer.")) return;
+    const resp = await fetch("/journal/clear", { method: "POST" });
+    const data = await resp.json();
+    if (data.ok) {
+        document.getElementById("trades-tbody").innerHTML = "";
+        updateStats(data.stats);
+        renderPsicoAlert(data.riesgo);
+    }
 });
 
 function updateStats(stats) {

@@ -131,8 +131,11 @@ a { color: inherit; text-decoration: none; }
 .hidden { display: none !important; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-@media (max-width: 1000px) { .grid-2, .grid-4 { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+.section-title { font-size: 15px; margin: 0 0 6px; color: var(--text-primary); }
 
 /* ---------- Forms ---------- */
 .form-row, .form-grid { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
@@ -192,8 +195,24 @@ th { color: var(--text-secondary); font-weight: 600; }
 .sr-level, .fibo-level { display: flex; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12.5px; }
 .fibo-level.key { background: rgba(23,201,100,.08); border-radius: 6px; }
 
+.setup-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 14px; background: var(--bg-panel-alt); }
+.setup-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; font-weight: 700; }
+
 .img-block { border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
 .img-block h4 { margin: 0 0 8px; font-size: 13px; color: var(--accent-gold); }
+
+/* ---------- Entradas (oportunidades de compra/venta) ---------- */
+.entry-card {
+    background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius);
+    padding: 18px; display: flex; flex-direction: column; gap: 8px;
+}
+.entry-card-head { display: flex; justify-content: space-between; align-items: center; }
+.entry-pair { font-size: 16px; font-weight: 700; }
+.entry-badge { border-radius: 6px; padding: 3px 10px; font-size: 12px; font-weight: 700; }
+.entry-badge.buy { background: rgba(23,201,100,.14); color: var(--accent-green); border: 1px solid rgba(23,201,100,.3); }
+.entry-badge.sell { background: rgba(245,69,92,.14); color: var(--accent-red); border: 1px solid rgba(245,69,92,.3); }
+.entry-summary { font-size: 12.5px; color: var(--text-secondary); }
+.entry-card-actions { display: flex; gap: 8px; margin-top: 6px; }
 
 /* ---------- Alerta psicológica (Trading Journal) ---------- */
 #psico-alert-panel { border-left: 4px solid var(--text-secondary); }

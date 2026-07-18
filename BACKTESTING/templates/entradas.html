@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Entradas · Scalping Analytics{% endblock %}
+{% block content %}
+<div class="panel-header">
+    <div>
+        <h1 class="page-title">Entradas</h1>
+        <p class="page-subtitle">Oportunidades de compra/venta y órdenes pendientes nutridas por el análisis del módulo de Backtesting.</p>
+    </div>
+    <button id="clear-entradas-btn" class="btn-danger">Limpiar Todo</button>
+</div>
+
+<div class="panel">
+    <h3>Registrar Entrada Manual</h3>
+    <form id="entrada-form" class="form-grid">
+        <div class="field">
+            <label>Par</label>
+            <select name="par">{% for p in pares %}<option value="{{ p }}">{{ p }}</option>{% endfor %}</select>
+        </div>
+        <div class="field">
+            <label>Dirección</label>
+            <select name="direccion"><option value="COMPRA">COMPRA</option><option value="VENTA">VENTA</option></select>
+        </div>
+        <div class="field">
+            <label>Tipo de orden</label>
+            <select name="tipo_orden">{% for t in tipos_orden %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+        </div>
+        <div class="field"><label>Precio de entrada</label><input type="number" step="any" name="precio_entrada" required></div>
+        <div class="field"><label>Stop Loss</label><input type="number" step="any" name="stop_loss" required></div>
+        <div class="field"><label>Take Profit</label><input type="number" step="any" name="take_profit" required></div>
+        <div class="field"><label>Riesgo/Beneficio</label><input type="number" step="any" name="riesgo_beneficio" placeholder="Ej: 2"></div>
+        <div class="field field-wide"><label>Motivo</label><input type="text" name="motivo" placeholder="Contexto de la señal"></div>
+        <div class="field field-btn"><button type="submit" class="btn-primary">Agregar Entrada</button></div>
+    </form>
+    <div id="entrada-status" class="status-line"></div>
+</div>
+
+<div class="panel">
+    <h3>Oportunidades Activas</h3>
+    <div id="entradas-grid" class="card-grid">
+        {% for e in entradas %}
+        <div class="entry-card" data-id="{{ e.id }}" data-direccion="{{ e.direccion }}">
+            <div class="entry-card-head">
+                <span class="entry-pair">{{ e.par }}</span>
+                <span class="entry-badge {{ 'buy' if e.direccion == 'COMPRA' else 'sell' }}">{{ 'BUY' if e.direccion == 'COMPRA' else 'SELL' }}</span>
+            </div>
+            <p class="entry-summary">{{ e.par }} - {{ 'BUY' if e.direccion == 'COMPRA' else 'SELL' }} - PRECIO DE ENTRADA {{ e.precio_entrada }}, SL {{ e.stop_loss }} Y TP {{ e.take_profit }}</p>
+            <div class="kpi-row"><span class="label">Tipo de orden</span><span class="value">{{ e.tipo_orden }}</span></div>
+            {% if e.riesgo_beneficio %}<div class="kpi-row"><span class="label">Riesgo/Beneficio</span><span class="value">1 : {{ e.riesgo_beneficio }}</span></div>{% endif %}
+            {% if e.temporalidad %}<div class="kpi-row"><span class="label">Temporalidad</span><span class="value">{{ e.temporalidad }}</span></div>{% endif %}
+            {% if e.motivo %}<p class="status-line">{{ e.motivo }}</p>{% endif %}
+            <div class="entry-card-actions">
+                <a class="btn-secondary" href="{{ url_for('journal.index') }}?par={{ e.par }}&direccion={{ 'LONG' if e.direccion == 'COMPRA' else 'SHORT' }}&entrada={{ e.precio_entrada }}&stop_loss={{ e.stop_loss }}&take_profit={{ e.take_profit }}">Enviar a Diario</a>
+                <button class="btn-danger delete-entrada-btn" data-id="{{ e.id }}">Eliminar</button>
+            </div>
+        </div>
+        {% else %}
+        <p class="status-line">Sin entradas todavía. Registra una manualmente o envíala desde el módulo de Backtesting.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/entradas.js') }}"></script>
+{% endblock %}
