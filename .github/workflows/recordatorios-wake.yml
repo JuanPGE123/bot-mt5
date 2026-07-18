@@ -1,0 +1,23 @@
+name: Recordatorios - despertar app (5am-9am COT)
+
+# fly.toml usa min_machines_running=0: la máquina de Fly.io duerme sin
+# tráfico. Este workflow la mantiene despierta solo en la ventana
+# 5:00am-9:00am hora Colombia (COT = UTC-5, sin horario de verano) pingeando
+# GET /health, para que el scheduler del módulo de Recordatorios esté vivo
+# y dispare los mensajes de WhatsApp a la hora exacta.
+#
+# GitHub Actions cron no es preciso al minuto (puede retrasarse varios
+# minutos en horas pico) — el ping cada 2 min compensa ese margen.
+
+on:
+  schedule:
+    - cron: '*/2 10-13 * * *'  # cada 2 min, 10:00-13:59 UTC = 5:00am-8:59am COT
+    - cron: '0-2 14 * * *'     # 14:00-14:02 UTC = 9:00am-9:02am COT (cierre de ventana)
+  workflow_dispatch: {}
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: curl -fsS --max-time 20 https://backtesterjptrading.fly.dev/health || true

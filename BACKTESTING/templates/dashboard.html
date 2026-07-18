@@ -25,5 +25,12 @@
         <h2>Diario de Trading</h2>
         <p>Registra operaciones y monitorea PnL, win-rate y rachas.</p>
     </a>
+    {% if not session.get('is_demo') %}
+    <a href="{{ url_for('recordatorio.index') }}" class="module-card">
+        <span class="module-icon">&#128276;</span>
+        <h2>Recordatorios</h2>
+        <p>Agente de recordatorios por WhatsApp — módulo personal, no visible en modo demo.</p>
+    </a>
+    {% endif %}
 </div>
 {% endblock %}

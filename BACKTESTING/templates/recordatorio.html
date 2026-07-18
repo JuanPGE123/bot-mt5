@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Recordatorios · Scalping Analytics{% endblock %}
+{% block content %}
+<div class="panel-header">
+    <div>
+        <h1 class="page-title">Recordatorios (WhatsApp)</h1>
+        <p class="page-subtitle">Módulo personal — se administra por WhatsApp escribiéndole al bot. Aquí solo se visualiza.</p>
+    </div>
+</div>
+
+<div class="panel">
+    <h3>Lista</h3>
+    <table class="data-table">
+        <thead>
+            <tr><th>#</th><th>Tarea</th><th>Fecha y hora</th><th>Estado</th><th></th></tr>
+        </thead>
+        <tbody id="recordatorios-body">
+            {% for r in items %}
+            <tr data-id="{{ r.id }}">
+                <td>{{ r.id }}</td>
+                <td>{{ r.tarea }}</td>
+                <td>{{ r.fecha_hora[:16].replace('T', ' ') }}</td>
+                <td>{{ 'Enviado' if r.enviado else 'Pendiente' }}</td>
+                <td><button class="btn-danger delete-recordatorio-btn" data-id="{{ r.id }}">Eliminar</button></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="status-line">Sin recordatorios todavía. Escríbele al bot por WhatsApp: "recuérdame algo mañana a las 5pm".</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll(".delete-recordatorio-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        fetch(`/recordatorio/delete/${id}`, { method: "POST" })
+            .then(r => r.json())
+            .then(res => { if (res.ok) btn.closest("tr").remove(); });
+    });
+});
+</script>
+{% endblock %}

@@ -32,6 +32,11 @@
             <a href="{{ url_for('journal.index') }}" class="{{ 'active' if '/journal' in request.path else '' }}">
                 <span class="icon">&#9998;</span> Diario de Trading
             </a>
+            {% if not session.get('is_demo') %}
+            <a href="{{ url_for('recordatorio.index') }}" class="{{ 'active' if '/recordatorio' in request.path else '' }}">
+                <span class="icon">&#128276;</span> Recordatorios
+            </a>
+            {% endif %}
         </nav>
         <div class="sidebar-footer">
             {% if session.get('is_demo') %}

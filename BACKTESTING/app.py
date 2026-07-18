@@ -8,12 +8,15 @@ from flask import Flask, render_template, redirect, url_for
 
 import config
 from models import init_db, seed_demo_data
+import models_recordatorio
 from routes.auth import auth_bp, login_required
 from routes.data import data_bp
 from routes.backtest import backtest_bp
 from routes.news import news_bp
 from routes.journal import journal_bp
 from routes.entradas import entradas_bp
+from routes.recordatorio import recordatorio_bp
+from services.recordatorio_scheduler import iniciar_scheduler
 
 
 def create_app():
@@ -23,6 +26,7 @@ def create_app():
 
     os.makedirs(os.path.dirname(config.DB_PATH), exist_ok=True)
     init_db()
+    models_recordatorio.init_db()
 
     # Perfil DemoUser/Showcase (Punto 4): se puebla una única vez con datos
     # ficticios, aislado en su propia base de datos (nunca toca datos reales).
@@ -34,6 +38,9 @@ def create_app():
     app.register_blueprint(news_bp)
     app.register_blueprint(journal_bp)
     app.register_blueprint(entradas_bp)
+    app.register_blueprint(recordatorio_bp)
+
+    iniciar_scheduler()
 
     @app.route("/")
     def root():

@@ -87,3 +87,11 @@ TIMEFRAME_MAP = {
 # (Módulo de Extracción de Datos Históricos): últimos N meses hasta el
 # instante exacto de la consulta.
 DEFAULT_MESES_HISTORICO = 6
+
+# --- Recordatorios por WhatsApp (Meta Cloud API) — módulo personal, solo AUTH_USERNAME ---
+WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN", "")
+WHATSAPP_PHONE_ID = os.environ.get("WHATSAPP_PHONE_ID", "")
+VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN", "")
+MI_NUMERO = os.environ.get("MI_NUMERO", "")  # E.164 sin '+', ej: 573001234567. Único número que el bot atiende.
+RECORDATORIOS_TZ = "America/Bogota"
+RECORDATORIOS_DB_PATH = os.path.join(DATA_DIR, "data", "recordatorios.db")

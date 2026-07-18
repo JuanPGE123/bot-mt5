@@ -9,6 +9,8 @@ primary_region = 'dfw'
 [build]
 [env]
   BACKTESTING_DATA_DIR = '/data'
+  # Secretos del módulo Recordatorios (WHATSAPP_TOKEN, WHATSAPP_PHONE_ID,
+  # VERIFY_TOKEN, MI_NUMERO) NO van aquí — se setean con `fly secrets set`.
 
 [[mounts]]
   source = 'backtesting_data'
@@ -19,14 +21,18 @@ primary_region = 'dfw'
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
+  # min_machines_running=0: la máquina duerme fuera de la ventana 5am-9am COT.
+  # Un workflow de GitHub Actions (.github/workflows/recordatorios-wake.yml)
+  # la despierta con pings a /health solo durante esa ventana, para que el
+  # scheduler de Recordatorios esté vivo y dispare a tiempo.
   min_machines_running = 0
 
   [[http_service.checks]]
-    interval = '30s'
+    interval = '15s'
     timeout = '5s'
     grace_period = '10s'
     method = 'GET'
-    path = '/login'
+    path = '/health'
 
 [[vm]]
   memory = '1gb'
